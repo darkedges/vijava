@@ -50,6 +50,7 @@ import com.vmware.vim25.PropertyChangeOp;
 import com.vmware.vim25.PropertyFilterSpec;
 import com.vmware.vim25.PropertyFilterUpdate;
 import com.vmware.vim25.PropertySpec;
+import com.vmware.vim25.RetrieveOptions;
 import com.vmware.vim25.RuntimeFault;
 import com.vmware.vim25.RuntimeFaultFaultMsg;
 import com.vmware.vim25.UpdateSet;
@@ -193,14 +194,31 @@ abstract public class ManagedObject {
 	 * 
 	 * @param propPaths an array of strings for property path
 	 * @return a Hashtable holding with the property path as key, and the value.
-	 * @throws RuntimeFaultFaultMsg 
-	 * @throws InvalidPropertyFaultMsg 
+	 * @throws RuntimeFaultFaultMsg
+	 * @throws InvalidPropertyFaultMsg
 	 * @throws InvalidProperty
 	 * @throws RuntimeFault
 	 * @throws RemoteException
 	 */
-	public Hashtable getPropertiesByPaths(List<String> propPaths) throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg  {
-		Hashtable[] pht = PropertyCollectorUtil.retrieveProperties(Arrays.asList(this), getMOR().getType(), propPaths);
+	public Hashtable getPropertiesByPaths(List<String> propPaths) throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
+		return getPropertiesByPaths(propPaths, null);
+	}
+
+	/**
+	 * Get multiple properties by their paths
+	 * 
+	 * @param propPaths an array of strings for property path
+	 * @return a Hashtable holding with the property path as key, and the value.
+	 * @throws RuntimeFaultFaultMsg
+	 * @throws InvalidPropertyFaultMsg
+	 * @throws InvalidProperty
+	 * @throws RuntimeFault
+	 * @throws RemoteException
+	 */
+	public Hashtable getPropertiesByPaths(List<String> propPaths, RetrieveOptions options)
+			throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
+		Hashtable[] pht = PropertyCollectorUtil.retrieveProperties(Arrays.asList(this), getMOR().getType(), propPaths,
+				options);
 		if (pht.length != 0)
 			return pht[0];
 		else

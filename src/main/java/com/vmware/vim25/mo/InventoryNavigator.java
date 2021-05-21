@@ -72,11 +72,30 @@ public class InventoryNavigator {
 	 */
 	public List<ManagedEntity> searchManagedEntities(String[][] typeinfo, boolean recurse)
 			throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
-		List<ObjectContent> ocs = retrieveObjectContents(typeinfo, recurse);
+		return searchManagedEntities(typeinfo, recurse, null);
+	}
+
+	/**
+	 * Retrieve content recursively with multiple properties. the typeinfo array
+	 * contains typename + properties to retrieve.
+	 *
+	 * @param typeinfo 2D array of properties for each typename
+	 * @param recurse  retrieve contents recursively from the root down
+	 *
+	 * @return retrieved object contents
+	 * @throws RuntimeFaultFaultMsg
+	 * @throws InvalidPropertyFaultMsg
+	 * @throws RemoteException
+	 * @throws RuntimeFault
+	 * @throws InvalidProperty
+	 */
+	public List<ManagedEntity> searchManagedEntities(String[][] typeinfo, boolean recurse, RetrieveOptions options)
+			throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
+		List<ObjectContent> ocs = retrieveObjectContents(typeinfo, recurse, options);
 		return createManagedEntities(ocs);
 	}
 
-	private List<ObjectContent> retrieveObjectContents(String[][] typeinfo, boolean recurse)
+	private List<ObjectContent> retrieveObjectContents(String[][] typeinfo, boolean recurse, RetrieveOptions options)
 			throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
 		if (typeinfo == null || typeinfo.length == 0) {
 			return null;
@@ -94,6 +113,8 @@ public class InventoryNavigator {
 			 ******************************************************/
 			if (ai.getApiVersion().startsWith("7")) {
 				selectionSpecs = PropertyCollectorUtil.buildFullTraversalV7();
+				if (options == null)
+					options = new RetrieveOptions();
 			} else {
 				if (ai.getApiVersion().startsWith("4") || ai.getApiVersion().startsWith("5")
 						|| ai.getApiVersion().startsWith("6")) {
@@ -116,9 +137,10 @@ public class InventoryNavigator {
 		spec.getPropSet().addAll(propspecary);
 
 		// need to check api version and choose the appropriate function
-		RetrieveOptions options = new RetrieveOptions();
-		options.setMaxObjects(10);
-		return pc.retrievePropertiesEx(Arrays.asList(spec), options).getObjects();
+		if (options != null)
+			return pc.retrievePropertiesEx(Arrays.asList(spec), options).getObjects();
+		else
+			return pc.retrieveProperties(Arrays.asList(spec));
 	}
 
 	private List<ManagedEntity> createManagedEntities(List<ObjectContent> ocs) {
@@ -149,6 +171,24 @@ public class InventoryNavigator {
 	 */
 	public ManagedEntity searchManagedEntity(String type, String name)
 			throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
+		return searchManagedEntity(type, name, null);
+	}
+
+	/**
+	 * Get the ManagedObjectReference for an item under the specified parent node
+	 * that has the type and name specified.
+	 *
+	 * @param type type of the managed object
+	 * @param name name to match
+	 * @return First ManagedEntity object of the type / name pair found
+	 * @throws RuntimeFaultFaultMsg
+	 * @throws InvalidPropertyFaultMsg
+	 * @throws RemoteException
+	 * @throws RuntimeFault
+	 * @throws InvalidProperty
+	 */
+	public ManagedEntity searchManagedEntity(String type, String name, RetrieveOptions options)
+			throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
 		if (name == null || name.length() == 0) {
 			return null;
 		}
@@ -159,7 +199,7 @@ public class InventoryNavigator {
 
 		String[][] typeinfo = new String[][] { new String[] { type, "name", }, };
 
-		List<ObjectContent> ocs = retrieveObjectContents(typeinfo, true);
+		List<ObjectContent> ocs = retrieveObjectContents(typeinfo, true, options);
 
 		if (ocs == null || ocs.isEmpty()) {
 			return null;

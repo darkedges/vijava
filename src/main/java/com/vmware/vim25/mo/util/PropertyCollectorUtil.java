@@ -81,9 +81,36 @@ public class PropertyCollectorUtil {
 	 * @throws
 	 * @throws
 	 */
-
 	public static Hashtable[] retrieveProperties(List<ManagedObject> mos, String moType, List<String> propPaths)
 			throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
+		return retrieveProperties(mos, moType, propPaths, null);
+	}
+
+	/**
+	 * Retrieves properties from multiple managed objects.
+	 * 
+	 * @param mos       the array of managed objects which could be of single type
+	 *                  or mixed types. When they are mix-typed, the moType must be
+	 *                  super type of all these managed objects.
+	 * @param moType    the type of the managed object. This managed object type
+	 *                  must have all the properties defined as in propPaths.
+	 * @param propPaths the array of property path which has dot as separator, for
+	 *                  example, "name", "guest.toolsStatus".
+	 * @param options   RetrieveOptions
+	 * @return an array of Hashtable whose order is the same as the mos array. Each
+	 *         Hashtable has the properties for one managed object. Note: some of
+	 *         the properties you want to retrieve might not be set, and therefore
+	 *         you don't have an entry in the Hashtable at all. In other words, it's
+	 *         possible for you to get null for a property from the resulted
+	 *         Hashtable.
+	 * @throws RuntimeFaultFaultMsg
+	 * @throws InvalidPropertyFaultMsg
+	 * @throws InvalidProperty
+	 * @throws
+	 * @throws
+	 */
+	public static Hashtable[] retrieveProperties(List<ManagedObject> mos, String moType, List<String> propPaths,
+			RetrieveOptions options) throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
 		if (mos == null)
 			throw new IllegalArgumentException("Managed object array cannot be null.");
 		if (mos.isEmpty())
@@ -101,11 +128,12 @@ public class PropertyCollectorUtil {
 		PropertyFilterSpec pfs = new PropertyFilterSpec();
 		pfs.getObjectSet().addAll(oss);
 		pfs.getPropSet().addAll(Arrays.asList(pSpec));
-
-		RetrieveOptions options = new RetrieveOptions();
-		options.setMaxObjects(10);
-		RetrieveResult retrieveResult = pc.retrievePropertiesEx(Arrays.asList(pfs), options);
-		List<ObjectContent> objs = retrieveResult.getObjects();
+		List<ObjectContent> objs;
+		if (options != null) {
+			objs = pc.retrievePropertiesEx(Arrays.asList(pfs), options).getObjects();
+		} else {
+			objs = pc.retrieveProperties(Arrays.asList(pfs));
+		}
 
 		Hashtable[] pTables = new Hashtable[mos.size()];
 
