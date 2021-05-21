@@ -194,7 +194,7 @@ public class ServiceInstance extends ManagedObject {
 			try {
 				serviceContent = retrieveServiceContent();
 			} catch (Exception e) {
-				System.out.println("Exceptoin: " + e);
+
 			}
 		}
 		return serviceContent;

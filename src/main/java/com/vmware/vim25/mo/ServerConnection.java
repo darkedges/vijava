@@ -109,12 +109,12 @@ final public class ServerConnection {
 	void setServiceInstance(ServiceInstance si) {
 		this.serviceInstance = si;
 	}
-//	@Override
-//	protected void finalize() throws Throwable 
-//	{
-//		logout(); //last defense to log out the connection
-//		super.finalize();
-//	}
+
+	@Override
+	protected void finalize() throws Throwable {
+		logout(); // last defense to log out the connection
+		super.finalize();
+	}
 //	
 
 }

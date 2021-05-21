@@ -43,6 +43,8 @@ import com.vmware.vim25.ObjectContent;
 import com.vmware.vim25.ObjectSpec;
 import com.vmware.vim25.PropertyFilterSpec;
 import com.vmware.vim25.PropertySpec;
+import com.vmware.vim25.RetrieveOptions;
+import com.vmware.vim25.RetrieveResult;
 import com.vmware.vim25.RuntimeFaultFaultMsg;
 import com.vmware.vim25.SelectionSpec;
 import com.vmware.vim25.TraversalSpec;
@@ -100,7 +102,10 @@ public class PropertyCollectorUtil {
 		pfs.getObjectSet().addAll(oss);
 		pfs.getPropSet().addAll(Arrays.asList(pSpec));
 
-		List<ObjectContent> objs = pc.retrieveProperties(Arrays.asList(pfs));
+		RetrieveOptions options = new RetrieveOptions();
+		options.setMaxObjects(10);
+		RetrieveResult retrieveResult = pc.retrievePropertiesEx(Arrays.asList(pfs), options);
+		List<ObjectContent> objs = retrieveResult.getObjects();
 
 		Hashtable[] pTables = new Hashtable[mos.size()];
 
@@ -198,17 +203,28 @@ public class PropertyCollectorUtil {
 		return sss;
 	}
 
+	public static TraversalSpec createTraversalSpec(String name, String type, String path, String[] selectPath,
+			boolean skipEnable) {
+		return createTraversalSpec(name, type, path, createSelectionSpec(selectPath), skipEnable);
+	}
+
 	public static TraversalSpec createTraversalSpec(String name, String type, String path, String[] selectPath) {
-		return createTraversalSpec(name, type, path, createSelectionSpec(selectPath));
+		return createTraversalSpec(name, type, path, createSelectionSpec(selectPath), true);
 	}
 
 	public static TraversalSpec createTraversalSpec(String name, String type, String path,
 			List<SelectionSpec> selectSet) {
+		return createTraversalSpec(name, type, path, selectSet, true);
+	}
+
+	public static TraversalSpec createTraversalSpec(String name, String type, String path,
+			List<SelectionSpec> selectSet, boolean enableSkip) {
 		TraversalSpec ts = new TraversalSpec();
 		ts.setName(name);
 		ts.setType(type);
 		ts.setPath(path);
-		ts.setSkip(Boolean.FALSE);
+		if (enableSkip)
+			ts.setSkip(Boolean.FALSE);
 		if (!selectSet.isEmpty())
 			ts.getSelectSet().addAll(selectSet);
 		return ts;
@@ -221,20 +237,20 @@ public class PropertyCollectorUtil {
 	 * @param typeProplists 2D array of type and properties to retrieve
 	 * @return Array of container filter specs
 	 */
-	public static PropertySpec[] buildPropertySpecArray(String[][] typeProplists) {
+	public static List<PropertySpec> buildPropertySpecArray(String[][] typeProplists) {
 		PropertySpec[] pSpecs = new PropertySpec[typeProplists.length];
 
 		for (int i = 0; i < typeProplists.length; i++) {
 			String type = typeProplists[i][0];
 			List<String> props = new ArrayList<String>();
-			for (int j = 0; j < props.size(); j++) {
+			for (int j = 0; j < typeProplists[i].length - 1; j++) {
 				props.add(typeProplists[i][j + 1]);
 			}
 
 			boolean all = (props.isEmpty()) ? true : false;
 			pSpecs[i] = createPropertySpec(type, all, props);
 		}
-		return pSpecs;
+		return Arrays.asList(pSpecs);
 	}
 
 	/**
@@ -245,23 +261,23 @@ public class PropertyCollectorUtil {
 	 * 
 	 * @return The SelectionSpec[]
 	 */
-	public static SelectionSpec[] buildFullTraversal() {
+	public static List<SelectionSpec> buildFullTraversal() {
 		List<TraversalSpec> tSpecs = buildFullTraversalV2NoFolder();
 
 		// Recurse through the folders
-		TraversalSpec visitFolders = createTraversalSpec("visitFolders", "Folder", "childEntity",
-				new String[] { "visitFolders", "dcToHf", "dcToVmf", "crToH", "crToRp", "HToVm", "rpToVm" });
+		TraversalSpec VisitFolders = createTraversalSpec("VisitFolders", "Folder", "childEntity",
+				new String[] { "VisitFolders", "dcToHf", "dcToVmf", "crToH", "crToRp", "HToVm", "rpToVm" });
 
 		SelectionSpec[] sSpecs = new SelectionSpec[tSpecs.size() + 1];
-		sSpecs[0] = visitFolders;
+		sSpecs[0] = VisitFolders;
 		for (int i = 1; i < sSpecs.length; i++)
 			sSpecs[i] = tSpecs.get(i - 1);
 
-		return sSpecs;
+		return Arrays.asList(sSpecs);
 	}
 
 	/**
-	 * This method creates basic set of TraveralSpec without visitFolders spec
+	 * This method creates basic set of TraveralSpec without VisitFolders spec
 	 * 
 	 * @return The TraversalSpec[]
 	 */
@@ -275,22 +291,22 @@ public class PropertyCollectorUtil {
 
 		// Traversal through ResourcePool branch
 		TraversalSpec crToRp = createTraversalSpec("crToRp", "ComputeResource", "resourcePool",
-				new String[] { "rpToRp", "rpToVm" });
+				new String[] { "rpToRp" });
 
 		// Traversal through host branch
 		TraversalSpec crToH = createTraversalSpec("crToH", "ComputeResource", "host", new ArrayList<SelectionSpec>());
 
 		// Traversal through hostFolder branch
 		TraversalSpec dcToHf = createTraversalSpec("dcToHf", "Datacenter", "hostFolder",
-				new String[] { "visitFolders" });
+				new String[] { "VisitFolders" });
 
 		// Traversal through vmFolder branch
 		TraversalSpec dcToVmf = createTraversalSpec("dcToVmf", "Datacenter", "vmFolder",
-				new String[] { "visitFolders" });
+				new String[] { "VisitFolders" });
 
-		TraversalSpec HToVm = createTraversalSpec("HToVm", "HostSystem", "vm", new String[] { "visitFolders" });
+		TraversalSpec HToVm = createTraversalSpec("HToVm", "HostSystem", "vm", new String[] { "VisitFolders" });
 
-		return Arrays.asList(dcToVmf, dcToHf, crToH, crToRp, rpToRp, HToVm, rpToVm);
+		return Arrays.asList(crToRp, crToH, dcToVmf, dcToHf, rpToRp, HToVm, rpToVm);
 	}
 
 	/**
@@ -299,7 +315,7 @@ public class PropertyCollectorUtil {
 	 * 
 	 * @return The SelectionSpec[]
 	 */
-	public static SelectionSpec[] buildFullTraversalV4() {
+	public static List<SelectionSpec> buildFullTraversalV4() {
 		List<TraversalSpec> tSpecs = buildFullTraversalV2NoFolder();
 
 		TraversalSpec dcToDs = createTraversalSpec("dcToDs", "Datacenter", "datastoreFolder",
@@ -321,13 +337,58 @@ public class PropertyCollectorUtil {
 		TraversalSpec visitFolders = createTraversalSpec("visitFolders", "Folder", "childEntity", new String[] {
 				"visitFolders", "dcToHf", "dcToVmf", "dcToDs", "dcToNetf", "crToH", "crToRp", "HToVm", "rpToVm" });
 
-		SelectionSpec[] sSpecs = new SelectionSpec[tSpecs.size() + 4];
-		sSpecs[0] = visitFolders;
-		sSpecs[1] = dcToDs;
-		sSpecs[2] = dcToNetf;
-		sSpecs[3] = vAppToRp;
-		for (int i = 4; i < sSpecs.length; i++)
-			sSpecs[i] = tSpecs.get(i - 4);
+		List<SelectionSpec> sSpecs = new ArrayList<SelectionSpec>();
+		sSpecs.add(visitFolders);
+		sSpecs.add(dcToDs);
+		sSpecs.add(dcToNetf);
+		sSpecs.add(vAppToRp);
+		for (int i = 0; i < 4; i++)
+			sSpecs.add(tSpecs.get(i));
+
+		return sSpecs;
+	}
+
+	/**
+	 * This method creates a SelectionSpec[] to traverses the entire inventory tree
+	 * starting at a Folder
+	 * 
+	 * @return The SelectionSpec[]
+	 */
+	public static List<SelectionSpec> buildFullTraversalV7() {
+		List<TraversalSpec> tSpecs = buildFullTraversalV2NoFolder();
+
+		TraversalSpec dcToDs = createTraversalSpec("dcToDs", "Datacenter", "datastore", new String[] {});
+
+		TraversalSpec vAppToRp = createTraversalSpec("vAppToRp", "VirtualApp", "resourcePool",
+				new String[] { "rpToRp" }, false);
+
+		TraversalSpec vAppToVm = createTraversalSpec("vAppToVM", "VirtualApp", "vm", new String[] {}, false);
+
+		/**
+		 * Copyright 2009 Altor Networks, contribution by Elsa Bignoli
+		 * 
+		 * @author Elsa Bignoli (elsa@altornetworks.com)
+		 */
+		// Traversal through netFolder branch
+		TraversalSpec dcToNetf = createTraversalSpec("dcToNetwork", "Datacenter", "network", new String[] {});
+
+		// Recurse through the folders
+		TraversalSpec visitFolders = createTraversalSpec("VisitFolders", "Folder", "childEntity", new String[] {
+				"crToRp", "crToH", "dcToVmf", "dcToHf", "vAppToRp", "vAppToVM", "dcToDs", "rpToVm", "VisitFolders" });
+
+		TraversalSpec rpToRp = createTraversalSpec("rpToRp", "ResourcePool", "resourcePool", new String[] { "rpToRp" });
+		TraversalSpec rpToVm = createTraversalSpec("rpToVm", "ResourcePool", "vm", new String[] {});
+
+		List<SelectionSpec> sSpecs = new ArrayList<SelectionSpec>();
+		sSpecs.add(visitFolders);
+		for (int i = 0; i < 4; i++)
+			sSpecs.add(tSpecs.get(i));
+		sSpecs.add(vAppToRp);
+		sSpecs.add(vAppToVm);
+		sSpecs.add(dcToDs);
+		sSpecs.add(rpToVm);
+		sSpecs.add(rpToRp);
+		sSpecs.add(dcToNetf);
 
 		return sSpecs;
 	}
