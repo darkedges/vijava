@@ -1,13 +1,10 @@
 package com.vmware.vim25.mo;
 
-import java.rmi.RemoteException;
 import java.util.List;
 
 import com.vmware.vim25.KernelModuleInfo;
 import com.vmware.vim25.ManagedObjectReference;
-import com.vmware.vim25.NotFound;
 import com.vmware.vim25.NotFoundFaultMsg;
-import com.vmware.vim25.RuntimeFault;
 import com.vmware.vim25.RuntimeFaultFaultMsg;
 
 public class HostKernelModuleSystem extends ManagedObject 

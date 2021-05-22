@@ -42,7 +42,6 @@ import com.vmware.vim25.LocalizedMethodFault;
 import com.vmware.vim25.ManagedObjectReference;
 import com.vmware.vim25.MethodFault;
 import com.vmware.vim25.OutOfBoundsFaultMsg;
-import com.vmware.vim25.RuntimeFault;
 import com.vmware.vim25.RuntimeFaultFaultMsg;
 import com.vmware.vim25.TaskInfo;
 import com.vmware.vim25.TaskInfoState;

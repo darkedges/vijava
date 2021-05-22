@@ -29,9 +29,10 @@ POSSIBILITY OF SUCH DAMAGE.
 
 package com.vmware.vim25.mo;
 
-import java.rmi.RemoteException;
-
-import com.vmware.vim25.*;
+import com.vmware.vim25.CustomFieldDef;
+import com.vmware.vim25.CustomFieldValue;
+import com.vmware.vim25.ManagedObjectReference;
+import com.vmware.vim25.RuntimeFaultFaultMsg;
 
 /**
  * The managed object class corresponding to the one defined in VI SDK API
@@ -41,11 +42,11 @@ import com.vmware.vim25.*;
  */
 
 abstract public class ExtensibleManagedObject extends ManagedObject {
-	public CustomFieldDef[] getAvailableField()  {
+	public CustomFieldDef[] getAvailableField() {
 		return (CustomFieldDef[]) getCurrentProperty("availableField");
 	}
 
-	public CustomFieldValue[] getValues()  {
+	public CustomFieldValue[] getValues() {
 		return (CustomFieldValue[]) getCurrentProperty("value");
 	}
 

@@ -29,7 +29,6 @@ POSSIBILITY OF SUCH DAMAGE.
 
 package com.vmware.vim25.mo;
 
-import java.rmi.RemoteException;
 import java.util.List;
 
 import com.vmware.vim25.*;

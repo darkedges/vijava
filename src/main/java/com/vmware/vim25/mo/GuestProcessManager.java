@@ -44,7 +44,6 @@ import com.vmware.vim25.InvalidStateFaultMsg;
 import com.vmware.vim25.ManagedObjectReference;
 import com.vmware.vim25.RuntimeFault;
 import com.vmware.vim25.RuntimeFaultFaultMsg;
-import com.vmware.vim25.TaskInProgress;
 import com.vmware.vim25.TaskInProgressFaultMsg;
 
 /**

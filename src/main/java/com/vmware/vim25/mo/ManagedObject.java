@@ -55,6 +55,7 @@ import com.vmware.vim25.RuntimeFault;
 import com.vmware.vim25.RuntimeFaultFaultMsg;
 import com.vmware.vim25.UpdateSet;
 import com.vmware.vim25.VimPortType;
+import com.vmware.vim25.WaitOptions;
 import com.vmware.vim25.mo.util.MorUtil;
 import com.vmware.vim25.mo.util.PropertyCollectorUtil;
 
@@ -134,7 +135,8 @@ abstract public class ManagedObject {
 		}
 	}
 
-	protected ObjectContent retrieveObjectProperties(List<String> properties) {
+	@SuppressWarnings("deprecation")
+	protected ObjectContent retrieveObjectProperties(List<String> properties, RetrieveOptions options) {
 		ObjectSpec oSpec = PropertyCollectorUtil.creatObjectSpec(getMOR(), Boolean.FALSE, null);
 
 		PropertySpec pSpec = PropertyCollectorUtil.createPropertySpec(getMOR().getType(),
@@ -150,7 +152,10 @@ abstract public class ManagedObject {
 
 		List<ObjectContent> objs;
 		try {
-			objs = pc.retrieveProperties(Arrays.asList(pfSpec));
+			if (options != null)
+				objs = pc.retrievePropertiesEx(Arrays.asList(pfSpec), options).getObjects();
+			else
+				objs = pc.retrieveProperties(Arrays.asList(pfSpec));
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
@@ -161,6 +166,10 @@ abstract public class ManagedObject {
 			return objs.get(0);
 	}
 
+	protected Object getCurrentProperty(String propertyName) {
+		return getCurrentProperty(propertyName, null);
+	}
+
 	/**
 	 * @param propertyName The property name of current managed object
 	 * @return it will return either an array of related data objects, or an data
@@ -169,9 +178,8 @@ abstract public class ManagedObject {
 	 * @throws RuntimeFault
 	 * @throws InvalidProperty @
 	 */
-
-	protected Object getCurrentProperty(String propertyName) {
-		ObjectContent objContent = retrieveObjectProperties(Arrays.asList(propertyName));
+	protected Object getCurrentProperty(String propertyName, RetrieveOptions options) {
+		ObjectContent objContent = retrieveObjectProperties(Arrays.asList(propertyName), options);
 
 		Object propertyValue = null;
 
@@ -200,7 +208,8 @@ abstract public class ManagedObject {
 	 * @throws RuntimeFault
 	 * @throws RemoteException
 	 */
-	public Hashtable getPropertiesByPaths(List<String> propPaths) throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
+	public Hashtable<String, Object> getPropertiesByPaths(List<String> propPaths)
+			throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
 		return getPropertiesByPaths(propPaths, null);
 	}
 
@@ -215,10 +224,10 @@ abstract public class ManagedObject {
 	 * @throws RuntimeFault
 	 * @throws RemoteException
 	 */
-	public Hashtable getPropertiesByPaths(List<String> propPaths, RetrieveOptions options)
+	public Hashtable<String, Object> getPropertiesByPaths(List<String> propPaths, RetrieveOptions options)
 			throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
-		Hashtable[] pht = PropertyCollectorUtil.retrieveProperties(Arrays.asList(this), getMOR().getType(), propPaths,
-				options);
+		Hashtable<String, Object>[] pht = PropertyCollectorUtil.retrieveProperties(Arrays.asList(this),
+				getMOR().getType(), propPaths, options);
 		if (pht.length != 0)
 			return pht[0];
 		else
@@ -239,7 +248,7 @@ abstract public class ManagedObject {
 		Object mos = new ManagedObject[mors.length];
 
 		try {
-			Class moClass = null;
+			Class<?> moClass = null;
 
 			if (mixedType == false) {
 				moClass = Class.forName(MO_PACKAGE_NAME + "." + mors[0].getType());
@@ -250,7 +259,7 @@ abstract public class ManagedObject {
 				if (mixedType == true) {
 					moClass = Class.forName(MO_PACKAGE_NAME + "." + mors[i].getType());
 				}
-				Constructor constructor = moClass
+				Constructor<?> constructor = moClass
 						.getConstructor(new Class[] { ServerConnection.class, ManagedObjectReference.class });
 
 				Array.set(mos, i, constructor.newInstance(new Object[] { getServerConnection(), mors[i] }));
@@ -370,6 +379,28 @@ abstract public class ManagedObject {
 	 */
 	protected Object[] waitForValues(List<String> filterProps, List<String> endWaitProps, Object[][] expectedVals)
 			throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg, InvalidCollectorVersionFaultMsg {
+		return waitForValues(filterProps, endWaitProps, expectedVals, null);
+	}
+
+	/**
+	 * Handle Updates for a single object. waits till expected values of properties
+	 * to check are reached Destroys the ObjectFilter when done.
+	 * 
+	 * @param filterProps  Properties list to filter
+	 * @param endWaitProps Properties list to check for expected values these be
+	 *                     properties of a property in the filter properties list
+	 * @param expectedVals values for properties to end the wait
+	 * @return true indicating expected values were met, and false otherwise
+	 * @throws InvalidPropertyFaultMsg
+	 * @throws RemoteException
+	 * @throws RuntimeFault
+	 * @throws InvalidProperty
+	 * @throws RuntimeFaultFaultMsg
+	 * @throws InvalidCollectorVersionFaultMsg
+	 */
+	protected Object[] waitForValues(List<String> filterProps, List<String> endWaitProps, Object[][] expectedVals,
+			WaitOptions waitOptions)
+			throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg, InvalidCollectorVersionFaultMsg {
 		String version = "";
 		Object[] endVals = new Object[endWaitProps.size()];
 		Object[] filterVals = new Object[filterProps.size()];
@@ -391,7 +422,11 @@ abstract public class ManagedObject {
 		boolean reached = false;
 
 		while (!reached) {
-			UpdateSet updateset = pc.waitForUpdates(version);
+			UpdateSet updateset;
+			if (waitOptions != null)
+				updateset = pc.waitForUpdatesEx(version, waitOptions);
+			else
+				updateset = pc.waitForUpdates(version);
 			if (updateset == null) {
 				continue;
 			}

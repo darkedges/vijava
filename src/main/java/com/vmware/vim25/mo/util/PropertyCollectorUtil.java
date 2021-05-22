@@ -44,7 +44,6 @@ import com.vmware.vim25.ObjectSpec;
 import com.vmware.vim25.PropertyFilterSpec;
 import com.vmware.vim25.PropertySpec;
 import com.vmware.vim25.RetrieveOptions;
-import com.vmware.vim25.RetrieveResult;
 import com.vmware.vim25.RuntimeFaultFaultMsg;
 import com.vmware.vim25.SelectionSpec;
 import com.vmware.vim25.TraversalSpec;
@@ -81,7 +80,7 @@ public class PropertyCollectorUtil {
 	 * @throws
 	 * @throws
 	 */
-	public static Hashtable[] retrieveProperties(List<ManagedObject> mos, String moType, List<String> propPaths)
+	public static Hashtable<String,Object>[] retrieveProperties(List<? extends ManagedObject> mos, String moType, List<String> propPaths)
 			throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
 		return retrieveProperties(mos, moType, propPaths, null);
 	}
@@ -109,7 +108,7 @@ public class PropertyCollectorUtil {
 	 * @throws
 	 * @throws
 	 */
-	public static Hashtable[] retrieveProperties(List<ManagedObject> mos, String moType, List<String> propPaths,
+	public static Hashtable<String,Object>[] retrieveProperties(List<? extends ManagedObject> mos, String moType, List<String> propPaths,
 			RetrieveOptions options) throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
 		if (mos == null)
 			throw new IllegalArgumentException("Managed object array cannot be null.");
@@ -135,7 +134,7 @@ public class PropertyCollectorUtil {
 			objs = pc.retrieveProperties(Arrays.asList(pfs));
 		}
 
-		Hashtable[] pTables = new Hashtable[mos.size()];
+		Hashtable<String,Object>[] pTables = new Hashtable[mos.size()];
 
 		for (int i = 0; objs != null && i < objs.size() && !objs.isEmpty(); i++) {
 			List<DynamicProperty> props = objs.get(i).getPropSet();
@@ -151,7 +150,7 @@ public class PropertyCollectorUtil {
 					throw new RuntimeException(
 							"Unexpected managed object in result: " + mor.getType() + ":" + mor.getValue());
 			}
-			pTables[index] = new Hashtable();
+			pTables[index] = new Hashtable<String,Object>();
 			for (int j = 0; props != null && j < props.size(); j++) {
 				Object obj = convertProperty(props.get(j).getVal());
 				if (obj == null) {
@@ -163,7 +162,7 @@ public class PropertyCollectorUtil {
 		return pTables;
 	}
 
-	private static int findIndex(List<ManagedObject> mos, ManagedObjectReference mor) {
+	private static int findIndex(List<? extends ManagedObject> mos, ManagedObjectReference mor) {
 		for (int i = 0; i < mos.size(); i++) {
 			if (mor.getType().equals(mos.get(i).getMOR().getType())
 					&& mor.getValue().equals(mos.get(i).getMOR().getValue()))
